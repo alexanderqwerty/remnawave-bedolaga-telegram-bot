@@ -12,7 +12,15 @@ import re
 
 import pytest
 
-from app.byo.node_secrets import NodeSecrets, build_node_secrets
+from app.byo.node_secrets import (
+    MAX_NODES_PER_OWNER,
+    MAX_SLUG_LENGTH,
+    PANEL_NAME_LIMIT,
+    NodeSecrets,
+    build_node_secrets,
+    node_name,
+    squad_name,
+)
 
 
 ZONE = 'vpn.miet-tv.ru'
@@ -83,3 +91,20 @@ def test_port_stays_in_the_private_range():
 def test_invalid_slug_is_rejected(bad_slug: str):
     with pytest.raises(ValueError):
         build_node_secrets(bad_slug, 1, ZONE, _counter_rng())
+
+
+def test_panel_names_follow_the_owner_convention():
+    assert node_name('lab-a', 2) == 'o-lab-a-2'
+    assert squad_name('lab-a') == 'o-lab-a'
+
+
+def test_names_of_the_longest_slug_fit_the_panel_limit():
+    # Панель принимает имена профилей, нод и сквадов не длиннее 30 символов.
+    longest = 'a' * MAX_SLUG_LENGTH
+    assert len(node_name(longest, MAX_NODES_PER_OWNER)) <= PANEL_NAME_LIMIT
+    assert len(squad_name(longest)) <= PANEL_NAME_LIMIT
+
+
+def test_a_slug_too_long_for_the_panel_is_rejected():
+    with pytest.raises(ValueError):
+        build_node_secrets('a' * (MAX_SLUG_LENGTH + 1), 1, ZONE, _counter_rng())

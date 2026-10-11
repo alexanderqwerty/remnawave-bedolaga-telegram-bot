@@ -124,3 +124,39 @@ async def test_success_returns_without_raising():
     capture = Capture()
     async with _client(capture) as client:
         await client.add_record(ZONE_DOMAIN, SUBDOMAIN, NODE_IP)  # не бросает — и этого достаточно
+
+
+def _zone_listing(*records: dict) -> dict:
+    """Ответ zone/get_resource_records в том виде, в каком его отдаёт живой reg.ru."""
+    return {
+        'result': 'success',
+        'answer': {'domains': [{'dname': ZONE_DOMAIN, 'result': 'success', 'rrs': list(records), 'soa': {}}]},
+    }
+
+
+def _record(subname: str, content: str, rectype: str = 'A') -> dict:
+    return {'subname': subname, 'rectype': rectype, 'content': content, 'prio': '0', 'state': 'A'}
+
+
+@pytest.mark.asyncio
+async def test_a_records_lists_the_addresses_of_one_subdomain():
+    capture = Capture(
+        body=_zone_listing(
+            _record(SUBDOMAIN, NODE_IP),
+            _record('dev.panel.vpn', '194.87.254.244'),
+            _record(SUBDOMAIN, 'v=spf1 -all', rectype='TXT'),
+        )
+    )
+    async with _client(capture) as client:
+        addresses = await client.a_records(ZONE_DOMAIN, SUBDOMAIN)
+
+    assert str(capture.request.url).endswith('/zone/get_resource_records')
+    assert capture.input_data == {'domains': [{'dname': ZONE_DOMAIN}]}
+    assert addresses == [NODE_IP]
+
+
+@pytest.mark.asyncio
+async def test_a_records_of_a_missing_subdomain_is_empty():
+    capture = Capture(body=_zone_listing(_record('dev.panel.vpn', '194.87.254.244')))
+    async with _client(capture) as client:
+        assert await client.a_records(ZONE_DOMAIN, SUBDOMAIN) == []

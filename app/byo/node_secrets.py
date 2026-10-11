@@ -16,7 +16,11 @@ from typing import NamedTuple, Protocol
 
 LABEL_LENGTH = 8
 WS_PATH_LENGTH = 12
-SLUG_PATTERN = re.compile(r'[a-z0-9][a-z0-9-]{0,30}[a-z0-9]')
+# Панель принимает имена профилей, нод и сквадов не длиннее 30 символов;
+# самое длинное наше имя — o-<slug>-10, отсюда предел slug.
+PANEL_NAME_LIMIT = 30
+MAX_SLUG_LENGTH = 24
+SLUG_PATTERN = re.compile(rf'[a-z0-9][a-z0-9-]{{0,{MAX_SLUG_LENGTH - 2}}}[a-z0-9]')
 # Диапазон портов инбаундов: приватный верх, подальше от занятых сервисов.
 PORT_BASE = 8500
 PORT_SPAN = 1000
@@ -45,6 +49,15 @@ class NodeSecrets(NamedTuple):
     inbound_tag: str
 
 
+def squad_name(slug: str) -> str:
+    return f'o-{slug}'
+
+
+def node_name(slug: str, ordinal: int) -> str:
+    """Имя ноды и её config-profile в панели."""
+    return f'{squad_name(slug)}-{ordinal}'
+
+
 def _port_for(slug: str, ordinal: int) -> int:
     # Детерминированный порт: один владелец + номер → один и тот же порт.
     seed = f'{slug}:{ordinal}'
@@ -65,5 +78,5 @@ def build_node_secrets(slug: str, ordinal: int, zone: str, rng: Rng | None = Non
         fqdn=f'{label}.{zone}',
         ws_path='/' + rng.token(WS_PATH_LENGTH),
         inbound_port=_port_for(slug, ordinal),
-        inbound_tag=f'o-{slug}-{ordinal}-tws',
+        inbound_tag=f'{node_name(slug, ordinal)}-tws',
     )

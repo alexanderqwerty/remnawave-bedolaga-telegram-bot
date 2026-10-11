@@ -3,6 +3,10 @@
 Реализует протокол ``StepJournal`` из ``provisioning``. Одна строка на пару
 (нода, шаг): ``mark_running`` создаёт её на первой попытке и обновляет на
 повторе, увеличивая ``attempts``; успех чистит прежнюю причину сбоя.
+
+Каждая отметка сразу фиксируется (commit): за подключением следят из других
+сессий, а перезапуск бота посреди подключения не должен стирать сделанное.
+Вместе с отметкой фиксируются и прочие изменения сессии — это намеренно.
 """
 
 from __future__ import annotations
@@ -37,7 +41,7 @@ class DatabaseStepJournal:
         row.status = ByoStepStatus.PENDING.value
         row.detail = None
         row.attempts = (row.attempts or 0) + 1
-        await self._db.flush()
+        await self._db.commit()
 
     async def mark_done(self, name: str) -> None:
         row = await self._row(name)
@@ -46,7 +50,7 @@ class DatabaseStepJournal:
             self._db.add(row)
         row.status = ByoStepStatus.DONE.value
         row.detail = None
-        await self._db.flush()
+        await self._db.commit()
 
     async def mark_failed(self, name: str, detail: str) -> None:
         row = await self._row(name)
@@ -55,4 +59,4 @@ class DatabaseStepJournal:
             self._db.add(row)
         row.status = ByoStepStatus.FAILED.value
         row.detail = detail[:DETAIL_MAX_LENGTH]
-        await self._db.flush()
+        await self._db.commit()

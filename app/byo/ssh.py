@@ -1,27 +1,33 @@
 """SSH к серверу владельца и сбор фактов о нём.
 
-``SshRunner`` поднимает соединение asyncssh по ключу и выполняет команды.
-``gather_facts`` запускает несколько проверочных команд через любой runner
-(в бою — ``SshRunner``, в тестах — поддельный) и разбирает вывод в ``VpsFacts``.
+``connect`` поднимает соединение asyncssh по ключу, ``SshRunner`` выполняет
+команды: ``run`` — для сбора фактов (вывод как есть), ``run_checked`` — для
+установки (ненулевой код выхода или тайм-аут — ошибка). ``gather_facts``
+запускает проверочные команды через любой runner и разбирает вывод в ``VpsFacts``.
 
 Доступ строго по ключу: root-пароль в этой схеме не используется, поэтому в
-коде его нет. Весь исходящий SSH идёт через egress-прокси (socks5 на xray).
+коде его нет. Исходящий SSH идёт через SOCKS-выход входа: владелец видит адрес
+входа, а не малины.
 """
 
 from __future__ import annotations
 
 import contextlib
+import socket
 from collections.abc import AsyncIterator, Sequence
 from typing import Protocol
 
 import asyncssh
+from python_socks.async_.asyncio import Proxy
 
 from app.byo.vps_check import VpsFacts
 
 
+SSH_PORT = 22
 CONNECT_TIMEOUT_SECONDS = 20
 COMMAND_TIMEOUT_SECONDS = 30
 KILOBYTES_PER_MEGABYTE = 1024
+STDERR_TAIL_LINES = 3
 
 # Команды сбора фактов. Ключи-подстроки совпадают с тем, что ищет разбор.
 _OS_RELEASE = 'cat /etc/os-release  # os-release'
@@ -37,6 +43,19 @@ class CommandRunner(Protocol):
     async def run(self, command: str) -> str: ...
 
 
+class RemoteCommandError(RuntimeError):
+    """Команда на сервере не удалась. Текста команды здесь нет: в нём бывают секреты."""
+
+
+def _text(output: object) -> str:
+    return output if isinstance(output, str) else ''
+
+
+def _tail(stderr: object) -> str:
+    lines = [line for line in _text(stderr).splitlines() if line.strip()]
+    return ' | '.join(lines[-STDERR_TAIL_LINES:]) or 'без вывода'
+
+
 class SshRunner:
     """Выполняет команды на сервере по SSH-ключу через asyncssh."""
 
@@ -45,7 +64,21 @@ class SshRunner:
 
     async def run(self, command: str) -> str:
         result = await self._connection.run(command, timeout=COMMAND_TIMEOUT_SECONDS, check=False)
-        return result.stdout if isinstance(result.stdout, str) else ''
+        return _text(result.stdout)
+
+    async def run_checked(self, command: str, *, timeout: float = COMMAND_TIMEOUT_SECONDS) -> str:
+        try:
+            result = await self._connection.run(command, timeout=timeout, check=False)
+        except TimeoutError as error:  # asyncssh.TimeoutError — наследник asyncio.TimeoutError
+            raise RemoteCommandError(f'не уложилась в {timeout:.0f} с') from error
+        if result.returncode != 0:
+            raise RemoteCommandError(f'код выхода {result.returncode}: {_tail(result.stderr)}')
+        return _text(result.stdout)
+
+
+async def _socket_through(proxy_url: str, host: str) -> socket.socket:
+    proxy = Proxy.from_url(proxy_url)
+    return await proxy.connect(dest_host=host, dest_port=SSH_PORT, timeout=CONNECT_TIMEOUT_SECONDS)
 
 
 @contextlib.asynccontextmanager
@@ -54,16 +87,18 @@ async def connect(
     *,
     client_keys: Sequence[str],
     username: str = 'root',
-    proxy_command: str | None = None,
+    proxy_url: str | None = None,
 ) -> AsyncIterator[SshRunner]:
-    """Соединение по ключу. ``proxy_command`` пускает SSH через egress-прокси."""
+    """Соединение по ключу; с ``proxy_url`` (socks5://…) — через этот выход."""
+    sock = await _socket_through(proxy_url, host) if proxy_url else None
     async with asyncssh.connect(
         host,
+        port=SSH_PORT,
         username=username,
         client_keys=list(client_keys),
         known_hosts=None,  # первое подключение к только что созданному VPS
         connect_timeout=CONNECT_TIMEOUT_SECONDS,
-        tunnel=proxy_command,
+        sock=sock,
     ) as connection:
         yield SshRunner(connection)
 

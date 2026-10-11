@@ -1,7 +1,8 @@
 """Клиент REST API reg.ru для A-записей поддоменов нод.
 
 ``add_record`` заводит ``<subdomain>.<domain> -> IP`` через ``zone/add_alias``,
-``remove_record`` снимает её. Учётные данные (логин + альтернативный пароль API)
+``remove_record`` снимает её, ``a_records`` читает адреса поддомена (чтобы повтор
+шага не создавал дубль записи). Учётные данные (логин + альтернативный пароль API)
 уходят отдельными полями формы, не внутри ``input_data``. IP VPS-входа должен
 быть в белом списке IP на странице «Настройки API» в кабинете reg.ru.
 
@@ -50,7 +51,14 @@ class RegruClient:
             {'domains': [{'dname': domain}], 'subdomain': subdomain, 'content': ip, 'record_type': A_RECORD},
         )
 
-    async def _call(self, method: str, input_data: dict[str, Any]) -> None:
+    async def a_records(self, domain: str, subdomain: str) -> list[str]:
+        body = await self._call('zone/get_resource_records', {'domains': [{'dname': domain}]})
+        records = []
+        for zone in (body.get('answer') or {}).get('domains') or []:
+            records.extend(zone.get('rrs') or [])
+        return [r['content'] for r in records if r.get('rectype') == A_RECORD and r.get('subname') == subdomain]
+
+    async def _call(self, method: str, input_data: dict[str, Any]) -> dict:
         form = {
             'username': self._username,
             'password': self._password,
@@ -62,14 +70,14 @@ class RegruClient:
         except httpx.HTTPError as error:
             raise RegruError(f'reg.ru {method}: сетевая ошибка: {error}') from error
 
-        self._raise_for_body(method, response)
+        return self._checked_body(method, response)
 
-    def _raise_for_body(self, method: str, response: httpx.Response) -> None:
+    def _checked_body(self, method: str, response: httpx.Response) -> dict:
         try:
             body = response.json()
         except ValueError:
             if response.is_success:
-                return
+                return {}
             raise RegruError(f'reg.ru {method}: HTTP {response.status_code}') from None
 
         if body.get('result') != 'success':
@@ -80,3 +88,4 @@ class RegruClient:
             if domain.get('result') != 'success':
                 reason = domain.get('error_text') or domain.get('error_code') or 'неизвестная ошибка'
                 raise RegruError(f'reg.ru {method} ({domain.get("dname")}): {reason}')
+        return body

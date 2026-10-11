@@ -51,6 +51,32 @@ def test_node_belongs_to_an_owner_and_is_removed_with_it():
     assert owner_fk.ondelete == 'CASCADE'
 
 
+def test_squad_and_tariff_belong_to_the_owner_not_the_node():
+    # Один сквад на все ноды владельца: вторая нода добавляет свой инбаунд
+    # в тот же сквад, тариф и промокод тоже общие.
+    assert {'squad_uuid', 'tariff_id'}.issubset(ByoOwner.__table__.c.keys())
+    assert 'squad_uuid' not in ByoNode.__table__.c
+
+
+def test_owner_survives_removal_of_its_tariff_in_the_bot():
+    tariff_fk = next(iter(ByoOwner.__table__.c.tariff_id.foreign_keys))
+    assert tariff_fk.column.table.name == 'tariffs'
+    assert tariff_fk.ondelete == 'SET NULL'
+
+
+def test_node_remembers_everything_its_removal_needs():
+    # Удаление идёт обратным порядком: хост → инбаунд из сквада → нода →
+    # профиль → DNS. Каждому шагу нужен свой идентификатор.
+    needed = {'host_uuid', 'inbound_uuid', 'node_uuid', 'config_profile_uuid', 'fqdn', 'ip'}
+    assert needed.issubset(ByoNode.__table__.c.keys())
+
+
+def test_node_keeps_its_inbound_port():
+    # Порт выводится из slug и номера, но формула может поменяться —
+    # у живой ноды он должен остаться прежним.
+    assert 'inbound_port' in ByoNode.__table__.c
+
+
 def test_step_belongs_to_a_node_and_is_removed_with_it():
     node_fk = next(iter(ByoStep.__table__.c.node_id.foreign_keys))
     assert node_fk.column.table.name == 'byo_nodes'

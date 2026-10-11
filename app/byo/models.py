@@ -1,8 +1,9 @@
 """Таблицы BYO.
 
-Лежат на общем ``Base``, поэтому создаются вместе со всей схемой при первом
-старте (upstream зовёт ``Base.metadata.create_all``) и не требуют отдельной
-миграции. Имена с префиксом ``byo_`` — чтобы не пересекаться с upstream.
+Лежат на общем ``Base``: на свежей БД upstream создаёт их вместе со всей схемой
+(``Base.metadata.create_all``), а на существующей, где upstream только гонит
+миграции, их нужно создать вызовом ``app.byo.schema.ensure_tables`` при старте.
+Имена с префиксом ``byo_`` — чтобы не пересекаться с upstream.
 
 Секретов здесь нет: SSH-ключ владельца, root-пароль и SECRET_KEY ноды живут
 в памяти на время подключения и в файлах на самом VPS, но не в этой БД.
@@ -51,8 +52,11 @@ class ByoOwner(Base):
     telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
     # Короткий устойчивый идентификатор для тегов, сквадов и поддоменов: o-<slug>.
     slug = Column(String(32), unique=True, nullable=False)
-    # Промо-группа и промокод владельца в самом боте (owner:<slug>).
+    # Сквад в панели — один на все ноды владельца: вторая нода добавляет в него свой инбаунд.
+    squad_uuid = Column(String(36), nullable=True)
+    # Промо-группа, тариф и промокод владельца в самом боте (owner:<slug>).
     promo_group_id = Column(Integer, ForeignKey('promo_groups.id', ondelete='SET NULL'), nullable=True)
+    tariff_id = Column(Integer, ForeignKey('tariffs.id', ondelete='SET NULL'), nullable=True)
     promo_code = Column(String(64), nullable=True)
     is_blocked = Column(Boolean, nullable=False, default=False, server_default='false')
 
@@ -76,13 +80,14 @@ class ByoNode(Base):
     ordinal = Column(Integer, nullable=False)
     ip = Column(String(45), nullable=False)
     fqdn = Column(String(255), nullable=True)
-    # Тег инбаунда и путь WebSocket — публичные, не секреты.
+    # Тег, порт инбаунда и путь WebSocket — публичные, не секреты.
     inbound_tag = Column(String(64), nullable=True)
+    inbound_port = Column(Integer, nullable=True)
     ws_path = Column(String(128), nullable=True)
     # UUID объектов в панели Remnawave: по ним идёт удаление ноды.
     config_profile_uuid = Column(String(36), nullable=True)
+    inbound_uuid = Column(String(36), nullable=True)
     node_uuid = Column(String(36), nullable=True)
-    squad_uuid = Column(String(36), nullable=True)
     host_uuid = Column(String(36), nullable=True)
     status = Column(String(20), nullable=False, default=ByoNodeStatus.PROVISIONING.value)
 

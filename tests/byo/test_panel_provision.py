@@ -273,6 +273,22 @@ async def test_squad_is_found_by_name_after_a_lost_response():
     assert list(panel.squads) == [squad_uuid]
 
 
+@pytest.mark.asyncio
+async def test_a_foreign_squad_with_the_same_name_is_never_adopted():
+    # Владелец сам выбирает имя группы: «lab-a» не должно подмешать его ноду в чужой сквад.
+    panel = FakePanel()
+    provisioner = _provisioner(panel)
+    foreign = await provisioner.ensure_profile(LAYOUT._replace(name='lab-a-profile', inbound_tag='lab-a-tws'))
+    foreign_squad = await provisioner.ensure_squad('o-lab-a', foreign.inbound_uuid)
+    ours = await provisioner.ensure_profile(LAYOUT)
+
+    with pytest.raises(PanelStateError):
+        await provisioner.ensure_squad('o-lab-a', ours.inbound_uuid)
+
+    assert panel.squads[foreign_squad]['inbounds'] == [foreign.inbound_uuid]
+    assert panel.calls_to('PATCH', '/api/internal-squads') == []
+
+
 # --- хост -----------------------------------------------------------------------------
 
 

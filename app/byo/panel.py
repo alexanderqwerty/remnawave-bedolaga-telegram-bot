@@ -197,6 +197,10 @@ class PanelProvisioner:
                     'POST', '/api/internal-squads', {'name': name, 'inbounds': [inbound_uuid]}
                 )
                 return created['uuid']
+            # По имени подхватываем только свой сквад, созданный до потерянного
+            # ответа: в нём нет ничего, кроме этого инбаунда. Чужой — не трогаем.
+            if not {inbound['uuid'] for inbound in existing['inbounds']}.issubset({inbound_uuid}):
+                raise PanelStateError(f'в панели уже есть чужой сквад с именем {name}')
             squad_uuid = existing['uuid']
 
         squad = await self._panel.request('GET', f'/api/internal-squads/{squad_uuid}')

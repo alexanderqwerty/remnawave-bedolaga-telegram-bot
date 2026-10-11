@@ -33,6 +33,12 @@ class DatabaseStepJournal:
         row = await self._row(name)
         return row is not None and row.status == ByoStepStatus.DONE.value
 
+    async def done_steps(self) -> set[str]:
+        result = await self._db.execute(
+            select(ByoStep.name).where(ByoStep.node_id == self._node_id, ByoStep.status == ByoStepStatus.DONE.value)
+        )
+        return set(result.scalars())
+
     async def mark_running(self, name: str) -> None:
         row = await self._row(name)
         if row is None:

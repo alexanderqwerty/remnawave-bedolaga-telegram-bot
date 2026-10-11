@@ -23,6 +23,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import relationship
 
@@ -34,6 +35,7 @@ class ByoNodeStatus(StrEnum):
     ONLINE = 'online'  # нода на связи с панелью
     OFFLINE = 'offline'  # панель потеряла связь (нода жива сама по себе)
     FAILED = 'failed'  # подключение не удалось
+    REMOVED = 'removed'  # забыта до первых внешних объектов; строка остаётся для суточного лимита
 
 
 class ByoStepStatus(StrEnum):
@@ -98,7 +100,15 @@ class ByoNode(Base):
     steps = relationship('ByoStep', back_populates='node', cascade='all, delete-orphan')
 
     __table_args__ = (
-        UniqueConstraint('owner_id', 'ordinal', name='uq_byo_nodes_owner_ordinal'),
+        # Номер уникален среди живых нод владельца: забытая (removed) номер не держит.
+        Index(
+            'uq_byo_nodes_owner_ordinal_live',
+            'owner_id',
+            'ordinal',
+            unique=True,
+            postgresql_where=text("status <> 'removed'"),
+            sqlite_where=text("status <> 'removed'"),
+        ),
         Index('ix_byo_nodes_owner_status', 'owner_id', 'status'),
     )
 

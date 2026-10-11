@@ -108,6 +108,7 @@ def test_statuses_are_plain_strings_not_native_enums():
         (ByoNodeStatus, 'ONLINE', 'online'),
         (ByoNodeStatus, 'OFFLINE', 'offline'),
         (ByoNodeStatus, 'FAILED', 'failed'),
+        (ByoNodeStatus, 'REMOVED', 'removed'),
         (ByoStepStatus, 'PENDING', 'pending'),
         (ByoStepStatus, 'DONE', 'done'),
         (ByoStepStatus, 'FAILED', 'failed'),

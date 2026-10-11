@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage
 
+from app.byo.handlers import register_handlers as register_byo_handlers
 from app.byo.tariff_guard import TariffAccessMiddleware
 from app.config import settings
 from app.handlers import (
@@ -187,6 +188,7 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
     dp.callback_query.middleware(SubscriptionStatusMiddleware())
     dp.pre_checkout_query.middleware(SubscriptionStatusMiddleware())
     dp.callback_query.middleware(TariffAccessMiddleware())
+    register_byo_handlers(dp)
     start.register_handlers(dp)
     menu.register_handlers(dp)
     subscription.register_handlers(dp)

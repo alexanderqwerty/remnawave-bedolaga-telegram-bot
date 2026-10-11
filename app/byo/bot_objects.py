@@ -116,6 +116,9 @@ class BotOwnerObjects:
             by_name = await self._db.execute(select(Tariff).where(Tariff.name == tariff_name(owner.slug)))
             tariff = by_name.scalars().first()
         if tariff is not None:
+            # Чужой тариф с тем же именем отдал бы группе владельца чужие серверы.
+            if list(tariff.allowed_squads or []) != [owner.squad_uuid]:
+                raise BotObjectsError(f'тариф «{tariff.name}» уже есть и ведёт на другие серверы')
             return tariff
         return await create_tariff(
             self._db,

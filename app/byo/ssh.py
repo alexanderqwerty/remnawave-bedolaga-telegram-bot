@@ -85,7 +85,7 @@ async def _socket_through(proxy_url: str, host: str) -> socket.socket:
 async def connect(
     host: str,
     *,
-    client_keys: Sequence[str],
+    client_keys: Sequence[str | asyncssh.SSHKey],
     username: str = 'root',
     proxy_url: str | None = None,
 ) -> AsyncIterator[SshRunner]:

@@ -13,6 +13,7 @@ import contextlib
 import itertools
 import re
 from collections.abc import AsyncIterator
+from types import SimpleNamespace
 from typing import Any
 
 from app.byo.models import ByoStepStatus
@@ -276,3 +277,23 @@ class CountingRng:
 
     def token(self, length: int) -> str:
         return f'{next(self._ids):0{length}d}'
+
+
+class FakeBot:
+    """Telegram: запоминает отправленные и исправленные сообщения."""
+
+    def __init__(self, *, edit_errors: list[Exception] | None = None) -> None:
+        self.sent: list[dict] = []
+        self.edited: list[dict] = []
+        self._edit_errors = list(edit_errors or [])
+        self._ids = itertools.count(100)
+
+    async def send_message(self, chat_id: int, text: str, reply_markup=None, **_kwargs) -> SimpleNamespace:
+        message_id = next(self._ids)
+        self.sent.append({'chat_id': chat_id, 'text': text, 'markup': reply_markup, 'message_id': message_id})
+        return SimpleNamespace(message_id=message_id)
+
+    async def edit_message_text(self, text: str, chat_id: int, message_id: int, reply_markup=None, **_kwargs):
+        if self._edit_errors:
+            raise self._edit_errors.pop(0)
+        self.edited.append({'chat_id': chat_id, 'message_id': message_id, 'text': text, 'markup': reply_markup})

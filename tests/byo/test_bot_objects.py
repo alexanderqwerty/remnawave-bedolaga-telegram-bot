@@ -197,6 +197,20 @@ async def test_a_server_row_left_by_a_sync_is_locked_down(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_a_tariff_with_the_same_name_for_another_squad_is_never_adopted(monkeypatch):
+    # Чужой тариф с тем же именем отдал бы группе владельца чужие серверы.
+    async with memory_session(monkeypatch, TABLES) as db:
+        owner = await _seed(db)
+        db.add(Tariff(name='VPN lab-a', allowed_squads=['99999999-0000-4000-8000-000000000000'], period_prices={}))
+        await db.commit()
+
+        with pytest.raises(BotObjectsError):
+            await BotOwnerObjects(db).ensure_for(owner)
+
+        assert owner.tariff_id is None
+
+
+@pytest.mark.asyncio
 async def test_refuses_when_the_bot_has_no_default_group(monkeypatch):
     # Upstream делает первую созданную группу группой по умолчанию — то есть общей
     # для всех пользователей. Группа владельца такой стать не должна.

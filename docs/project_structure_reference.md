@@ -128,9 +128,18 @@
 - `app/byo/connect.py` — Python-модуль
   Классы: `ConnectError`, `ConnectSettings` (1 методов), `RemoteRunner` (1 методов), `DnsRecords` (2 методов), `OwnerObjects` (1 методов), `ConnectDeps`
   Функции: `connect_node` — Проводит ноду через все шаги. ``node.owner`` и ``owner.nodes`` должны быть загружены.
+- `app/byo/handlers.py` — Python-модуль
+  Классы: `ByoStates`
+  Функции: `show_menu`, `start_connect`, `receive_group_name`, `receive_ip`, `retry`, `forget`, `cancel`, `register_handlers`
 - `app/byo/journal.py` — Python-модуль
-  Классы: `DatabaseStepJournal` (6 методов)
+  Классы: `DatabaseStepJournal` (7 методов)
   Функции: нет
+- `app/byo/keys.py` — Python-модуль
+  Классы: нет
+  Функции: `load_or_create_key`, `public_key_line`
+- `app/byo/menu.py` — Python-модуль
+  Классы: нет
+  Функции: `byo_menu_buttons`
 - `app/byo/models.py` — Python-модуль
   Классы: `ByoNodeStatus`, `ByoStepStatus`, `ByoOwner` (1 методов), `ByoNode` (1 методов), `ByoStep` (1 методов)
   Функции: нет
@@ -140,27 +149,42 @@
 - `app/byo/node_secrets.py` — Python-модуль
   Классы: `Rng` (1 методов), `NodeSecrets`
   Функции: `default_rng`, `squad_name`, `node_name` — Имя ноды и её config-profile в панели., `build_node_secrets`
+- `app/byo/owners.py` — Python-модуль
+  Классы: `OwnerError`, `NodeLimits`, `NodeRequest`
+  Функции: `parse_group_name`, `parse_public_ipv4`, `find_owner`, `is_slug_free`, `load_node`, `pending_node_ids`, `check_limits`, `register_node`, `failure_reasons` — Упавший шаг и его причина для каждой ноды из списка, у которой он есть., `can_forget`, `forget_node`
 - `app/byo/panel.py` — Python-модуль
   Классы: `PanelRequester` (1 методов), `PanelStateError`, `NodeNotConnectedError`, `IsolationError`, `NodeLayout`, `ProfileRef`, `PanelProvisioner` (8 методов)
   Функции: нет
 - `app/byo/panel_client.py` — Python-модуль
   Классы: `BotPanel` (2 методов)
   Функции: нет
+- `app/byo/progress.py` — Python-модуль
+  Классы: `ProgressMessage` (6 методов)
+  Функции: `render_progress`, `render_done`
 - `app/byo/provisioning.py` — Python-модуль
   Классы: `StepJournal` (4 методов), `Step`, `ProvisioningError` (1 методов)
   Функции: `run_steps`
 - `app/byo/regru.py` — Python-модуль
   Классы: `RegruError`, `RegruClient` (8 методов)
   Функции: нет
+- `app/byo/runtime.py` — Python-модуль
+  Классы: `ByoRuntime` (15 методов)
+  Функции: нет
 - `app/byo/schema.py` — Python-модуль
   Классы: нет
   Функции: `ensure_tables`
+- `app/byo/settings.py` — Python-модуль
+  Классы: `ByoSettings` (3 методов)
+  Функции: нет
 - `app/byo/ssh.py` — Python-модуль
   Классы: `CommandRunner` (1 методов), `RemoteCommandError`, `SshRunner` (3 методов)
   Функции: `connect` — Соединение по ключу; с ``proxy_url`` (socks5://…) — через этот выход., `gather_facts`
 - `app/byo/tariff_guard.py` — Python-модуль
   Классы: `TariffAccessMiddleware` (3 методов)
   Функции: `tariff_id_from_callback` — Возвращает id тарифа из данных кнопки или None, если прочитать его нельзя., `is_tariff_allowed` — Тариф без ограничений доступен всем, с ограничениями — только участникам его групп., `load_tariff_group_ids` — Группы, которым разрешён тариф. Пусто — ограничений нет (или тарифа не существует)., `load_user_group_ids` — Все группы пользователя: основная из `users.promo_group_id` и членства.
+- `app/byo/texts.py` — Python-модуль
+  Классы: нет
+  Функции: нет
 - `app/byo/vps_check.py` — Python-модуль
   Классы: `VpsFacts`, `Verdict`
   Функции: `evaluate`
@@ -3305,20 +3329,26 @@
   Классы: нет
   Функции: нет
 - `tests/byo/fakes.py` — Python-модуль
-  Классы: `PanelUnavailableError`, `FakePanel` (15 методов), `FakeServer` (5 методов), `FakeSsh` (2 методов), `FakeDns` (3 методов), `FakeBotObjects` (2 методов), `MemoryJournal` (6 методов), `CountingRng` (2 методов)
+  Классы: `PanelUnavailableError`, `FakePanel` (15 методов), `FakeServer` (5 методов), `FakeSsh` (2 методов), `FakeDns` (3 методов), `FakeBotObjects` (2 методов), `MemoryJournal` (6 методов), `CountingRng` (2 методов), `FakeBot` (3 методов)
   Функции: нет
 - `tests/byo/test_bot_objects.py` — Python-модуль
   Классы: нет
-  Функции: `test_owner_gets_a_group_of_their_own_that_is_not_the_default`, `test_owner_server_is_hidden_from_selection_and_bound_to_the_group`, `test_tariff_is_free_long_single_squad_and_single_group`, `test_promo_code_grants_the_owner_group`, `test_owner_is_put_into_their_group`, `test_a_second_run_creates_nothing_new`, `test_a_tariff_lost_before_saving_its_id_is_found_by_name`, `test_a_chosen_promo_code_is_kept_on_retry`, `test_a_server_row_left_by_a_sync_is_locked_down`, `test_refuses_when_the_bot_has_no_default_group`, `test_requires_the_owner_squad`, `test_an_owner_unknown_to_the_bot_still_gets_the_objects`
+  Функции: `test_owner_gets_a_group_of_their_own_that_is_not_the_default`, `test_owner_server_is_hidden_from_selection_and_bound_to_the_group`, `test_tariff_is_free_long_single_squad_and_single_group`, `test_promo_code_grants_the_owner_group`, `test_owner_is_put_into_their_group`, `test_a_second_run_creates_nothing_new`, `test_a_tariff_lost_before_saving_its_id_is_found_by_name`, `test_a_chosen_promo_code_is_kept_on_retry`, `test_a_server_row_left_by_a_sync_is_locked_down`, `test_a_tariff_with_the_same_name_for_another_squad_is_never_adopted`, `test_refuses_when_the_bot_has_no_default_group`, `test_requires_the_owner_squad`, `test_an_owner_unknown_to_the_bot_still_gets_the_objects`
 - `tests/byo/test_connect.py` — Python-модуль
   Классы: `Saves` (2 методов), `NoSleep` (2 методов), `World` (5 методов)
   Функции: `test_a_clean_server_goes_through_every_step_in_order`, `test_the_plan_order_is_kept`, `test_node_names_and_domain_are_saved_on_the_node`, `test_dns_points_the_node_domain_at_the_server`, `test_panel_objects_are_recorded_for_later_removal`, `test_node_is_registered_with_the_server_address_and_the_egress_proxy`, `test_host_serves_the_node_domain_only_to_the_owner_squad`, `test_bot_objects_are_made_last_for_the_owner`, `test_install_writes_the_panel_key_only_into_the_node_compose`, `test_the_panel_key_is_never_stored`, `test_state_is_saved_as_the_steps_go`, `test_a_server_in_russia_is_rejected_before_anything_is_created`, `test_a_login_without_root_is_rejected`, `test_an_existing_record_for_this_server_is_not_added_again`, `test_a_name_taken_by_another_address_stops_the_connection`, `test_the_node_zone_must_live_inside_the_dns_domain`, `test_a_failed_install_command_is_named_but_not_quoted`, `test_the_node_waits_for_its_certificate`, `test_a_certificate_that_never_comes_fails_the_tls_step`, `test_a_retry_continues_from_the_failed_step`, `test_a_retry_after_the_server_steps_does_not_reconnect_by_ssh`, `test_a_second_node_joins_the_owner_squad`, `test_a_squad_seeing_a_foreign_node_stops_before_the_bot_objects`
+- `tests/byo/test_handlers.py` — Python-модуль
+  Классы: `FakeRuntime` (5 методов), `FakeMessage` (5 методов)
+  Функции: `test_a_newcomer_sees_the_terms_and_a_connect_button`, `test_the_menu_is_closed_when_the_module_is_off`, `test_a_newcomer_is_asked_for_a_group_name_first`, `test_an_unusable_group_name_is_asked_again`, `test_a_busy_group_name_is_asked_again`, `test_a_good_group_name_leads_to_our_key_and_the_ip_question`, `test_a_bad_ip_is_asked_again`, `test_a_good_ip_creates_the_node_and_starts_connecting`, `test_a_refused_node_explains_why_and_ends_the_dialog`, `test_an_owner_adding_a_server_skips_the_name`, `test_an_owner_at_the_limit_is_stopped_before_any_question`, `test_the_owner_menu_lists_servers_the_code_and_actions`, `test_a_running_connection_shows_as_connecting`, `test_retry_starts_the_connection_again`, `test_retry_right_after_a_failure_asks_to_wait`, `test_retry_is_refused_when_it_makes_no_sense`, `test_forget_removes_a_server_that_failed_early`, `test_forget_refuses_a_server_with_outside_objects`, `test_cancel_ends_the_dialog`, `test_commands_are_never_taken_as_answers`
 - `tests/byo/test_journal.py` — Python-модуль
   Классы: нет
-  Функции: `test_steps_are_visible_from_another_session_right_away`
+  Функции: `test_steps_are_visible_from_another_session_right_away`, `test_done_steps_lists_only_finished_ones`
 - `tests/byo/test_journal_postgres.py` — Python-модуль
   Классы: нет
   Функции: `test_first_attempt_inserts_a_pending_then_done_row`, `test_retry_updates_the_same_row_and_counts_attempts`, `test_failure_detail_is_stored_and_truncated`, `test_steps_of_two_nodes_do_not_collide`
+- `tests/byo/test_keys.py` — Python-модуль
+  Классы: нет
+  Функции: `test_a_missing_key_is_created_private`, `test_an_existing_key_is_reused_not_replaced`, `test_owners_get_a_single_line_ed25519_public_key`
 - `tests/byo/test_models.py` — Python-модуль
   Классы: нет
   Функции: `test_byo_tables_register_on_the_shared_base`, `test_no_secret_columns_leak_into_the_schema`, `test_owner_is_one_per_telegram_account`, `test_node_belongs_to_an_owner_and_is_removed_with_it`, `test_squad_and_tariff_belong_to_the_owner_not_the_node`, `test_owner_survives_removal_of_its_tariff_in_the_bot`, `test_node_remembers_everything_its_removal_needs`, `test_node_keeps_its_inbound_port`, `test_step_belongs_to_a_node_and_is_removed_with_it`, `test_a_node_cannot_list_the_same_step_twice`, `test_statuses_are_plain_strings_not_native_enums`, `test_status_values`, `test_byo_uses_its_own_table_names`
@@ -3328,21 +3358,33 @@
 - `tests/byo/test_node_secrets.py` — Python-модуль
   Классы: нет
   Функции: `test_builds_all_fields_for_the_first_node`, `test_tag_encodes_slug_and_ordinal`, `test_label_is_random_lowercase_alnum`, `test_ws_path_is_a_random_hex_path`, `test_label_and_path_differ`, `test_port_is_stable_for_the_same_owner_and_ordinal`, `test_port_differs_between_two_nodes_of_one_owner`, `test_port_stays_in_the_private_range`, `test_invalid_slug_is_rejected`, `test_panel_names_follow_the_owner_convention`, `test_names_of_the_longest_slug_fit_the_panel_limit`, `test_a_slug_too_long_for_the_panel_is_rejected`
+- `tests/byo/test_owners.py` — Python-модуль
+  Классы: нет
+  Функции: `test_group_name_becomes_a_panel_safe_slug`, `test_unusable_group_names_are_rejected`, `test_public_ipv4_is_accepted`, `test_private_and_malformed_addresses_are_rejected`, `test_first_server_creates_the_owner_and_node_one`, `test_next_server_gets_the_next_number`, `test_a_server_already_connected_is_refused`, `test_no_more_than_the_node_limit`, `test_no_more_than_the_daily_attempts_even_after_forgetting`, `test_attempts_older_than_a_day_do_not_count`, `test_a_blocked_owner_cannot_add_servers`, `test_a_taken_slug_is_not_free`, `test_leftovers_in_the_bot_make_a_slug_busy`, `test_a_new_owner_with_a_busy_slug_is_refused`, `test_a_server_that_failed_before_dns_can_be_forgotten`, `test_a_server_with_a_dns_record_cannot_be_forgotten`, `test_a_working_server_cannot_be_forgotten`, `test_unfinished_connections_are_found_for_resuming`, `test_a_loaded_node_brings_its_owner_and_siblings`
 - `tests/byo/test_panel_client.py` — Python-модуль
   Классы: `FakeApi` (2 методов)
   Функции: `test_request_goes_through_the_bot_client_and_unwraps_the_response`, `test_list_responses_are_unwrapped_too`, `test_a_response_without_payload_becomes_an_empty_dict`
 - `tests/byo/test_panel_provision.py` — Python-модуль
   Классы: `Sleeps` (2 методов)
-  Функции: `test_profile_inbound_is_trojan_over_websocket`, `test_inbound_listens_only_on_localhost_behind_caddy`, `test_websocket_host_matches_the_domain_caddy_serves`, `test_profile_blocks_private_addresses_before_direct`, `test_profile_is_found_after_a_lost_response`, `test_profile_without_the_expected_inbound_is_refused`, `test_node_uses_the_profile_and_its_inbound`, `test_panel_reaches_the_node_through_the_egress_proxy`, `test_no_proxy_means_the_field_is_omitted`, `test_node_is_found_after_a_lost_response`, `test_a_stale_node_with_the_same_name_and_another_address_is_refused`, `test_waits_until_the_panel_connects_to_the_node`, `test_gives_up_with_the_panel_status_message`, `test_first_node_creates_the_owner_squad_with_its_inbound`, `test_second_node_adds_its_inbound_to_the_same_squad`, `test_an_inbound_already_in_the_squad_is_not_patched_again`, `test_squad_is_found_by_name_after_a_lost_response`, `test_host_allows_only_the_owner_squad`, `test_clients_reach_the_node_by_domain_over_tls_on_443`, `test_host_is_found_after_a_lost_response`, `test_secret_key_comes_from_keygen`, `test_isolation_holds_when_the_squad_sees_exactly_the_owner_nodes`, `test_isolation_fails_when_a_foreign_node_is_visible`, `test_isolation_fails_when_an_owner_node_is_missing`
+  Функции: `test_profile_inbound_is_trojan_over_websocket`, `test_inbound_listens_only_on_localhost_behind_caddy`, `test_websocket_host_matches_the_domain_caddy_serves`, `test_profile_blocks_private_addresses_before_direct`, `test_profile_is_found_after_a_lost_response`, `test_profile_without_the_expected_inbound_is_refused`, `test_node_uses_the_profile_and_its_inbound`, `test_panel_reaches_the_node_through_the_egress_proxy`, `test_no_proxy_means_the_field_is_omitted`, `test_node_is_found_after_a_lost_response`, `test_a_stale_node_with_the_same_name_and_another_address_is_refused`, `test_waits_until_the_panel_connects_to_the_node`, `test_gives_up_with_the_panel_status_message`, `test_first_node_creates_the_owner_squad_with_its_inbound`, `test_second_node_adds_its_inbound_to_the_same_squad`, `test_an_inbound_already_in_the_squad_is_not_patched_again`, `test_squad_is_found_by_name_after_a_lost_response`, `test_a_foreign_squad_with_the_same_name_is_never_adopted`, `test_host_allows_only_the_owner_squad`, `test_clients_reach_the_node_by_domain_over_tls_on_443`, `test_host_is_found_after_a_lost_response`, `test_secret_key_comes_from_keygen`, `test_isolation_holds_when_the_squad_sees_exactly_the_owner_nodes`, `test_isolation_fails_when_a_foreign_node_is_visible`, `test_isolation_fails_when_an_owner_node_is_missing`
+- `tests/byo/test_progress.py` — Python-модуль
+  Классы: нет
+  Функции: `test_done_current_and_future_steps_are_marked`, `test_steps_edit_the_message_the_owner_already_sees`, `test_a_resumed_connection_starts_with_a_new_message_and_known_steps`, `test_a_deleted_message_is_replaced_by_a_new_one`, `test_flood_control_skips_a_progress_update_silently`, `test_failure_names_the_step_escapes_the_reason_and_offers_a_retry`, `test_the_final_message_is_delivered_even_through_flood_control`
 - `tests/byo/test_provisioning.py` — Python-модуль
   Классы: `FakeJournal` (5 методов)
   Функции: `step`, `test_all_steps_run_in_order_on_a_clean_journal`, `test_finished_steps_are_skipped_on_resume`, `test_a_failing_step_stops_the_rest_and_is_recorded`, `test_resume_after_a_failure_reruns_only_the_failed_step_onward`, `test_each_attempt_is_counted`, `test_steps_share_a_context_so_later_steps_see_earlier_results`, `test_a_skipped_step_still_contributes_its_context`
 - `tests/byo/test_regru.py` — Python-модуль
   Классы: `Capture` (2 методов)
   Функции: `test_add_record_posts_to_add_alias_with_credentials_and_data`, `test_remove_record_posts_to_remove_record_with_type_and_content`, `test_credentials_never_appear_in_input_data`, `test_api_level_error_raises_with_reason`, `test_per_domain_error_raises_even_when_top_result_is_success`, `test_http_error_status_raises`, `test_success_returns_without_raising`, `test_a_records_lists_the_addresses_of_one_subdomain`, `test_a_records_of_a_missing_subdomain_is_empty`
+- `tests/byo/test_runtime.py` — Python-модуль
+  Классы: `World` (2 методов)
+  Функции: `test_a_launched_node_connects_in_the_background`, `test_a_failed_node_offers_a_retry_and_tells_the_admins`, `test_a_node_is_never_connected_twice_at_once`, `test_unfinished_connections_resume_after_a_restart`, `test_an_unexpected_error_does_not_leave_the_node_hanging`, `test_a_disabled_module_does_nothing_at_start`, `test_owners_get_our_public_key_once_started`, `test_a_broken_start_leaves_the_bot_running_without_the_module`, `test_a_vanished_node_is_skipped_quietly`
 - `tests/byo/test_schema.py` — Python-модуль
   Классы: нет
   Функции: `test_missing_byo_tables_are_created`, `test_existing_rows_survive_a_second_start`, `test_only_byo_tables_are_touched`
+- `tests/byo/test_settings.py` — Python-модуль
+  Классы: нет
+  Функции: `test_the_module_is_off_by_default`, `test_complete_settings_switch_the_module_on`, `test_missing_values_are_named_by_their_variables`, `test_the_egress_must_be_a_socks5_proxy`, `test_the_node_zone_must_be_inside_the_dns_domain`, `test_connect_settings_are_built_from_the_environment`, `test_the_reg_ru_password_never_shows_in_repr`, `test_values_come_from_byo_prefixed_variables`, `test_limits_default_to_the_plan`
 - `tests/byo/test_ssh_facts.py` — Python-модуль
   Классы: `FakeRunner` (2 методов)
   Функции: `test_parses_a_plain_debian`, `test_busy_ports_are_collected_as_numbers`, `test_country_is_none_when_lookup_is_empty`, `test_country_is_uppercased_and_trimmed`, `test_unparsable_memory_becomes_zero_so_the_check_rejects_it`, `test_os_id_is_lowercased`
@@ -3355,6 +3397,9 @@
 - `tests/byo/test_vps_check.py` — Python-модуль
   Классы: нет
   Функции: `test_a_fresh_debian_passes`, `test_ubuntu_also_passes`, `test_other_distros_are_rejected`, `test_too_little_memory_is_rejected`, `test_slightly_under_a_gib_still_passes`, `test_a_busy_required_port_is_rejected`, `test_other_busy_ports_do_not_matter`, `test_a_russian_ip_is_rejected`, `test_unknown_country_is_rejected_to_stay_safe`, `test_the_first_failing_requirement_is_reported`
+- `tests/byo/test_wiring.py` — Python-модуль
+  Классы: нет
+  Функции: `test_handlers_are_registered_before_the_catch_all`, `test_main_starts_and_stops_the_background_service`, `test_main_menu_shows_the_button_only_while_the_module_runs`
 
 ### tests/cabinet
 

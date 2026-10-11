@@ -6,6 +6,7 @@ from aiogram import types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.byo.menu import byo_menu_buttons
 from app.config import PERIOD_PRICES, settings
 from app.database.models import User
 from app.localization.loader import DEFAULT_LANGUAGE
@@ -755,6 +756,7 @@ def get_main_menu_keyboard(
 
     # Добавляем кнопки промокода и рефералов, учитывая настройки
     paired_buttons.append(InlineKeyboardButton(text=texts.MENU_PROMOCODE, callback_data='menu_promocode'))
+    paired_buttons.extend(byo_menu_buttons())
 
     # Добавляем кнопку рефералов, только если программа включена
     if settings.is_referral_program_enabled():

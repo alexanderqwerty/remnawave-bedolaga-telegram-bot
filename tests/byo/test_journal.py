@@ -50,3 +50,31 @@ async def test_steps_are_visible_from_another_session_right_away(monkeypatch, tm
                 assert not await seen.is_done('check')
     finally:
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_done_steps_lists_only_finished_ones(monkeypatch, tmp_path):
+    # Продолженное подключение сразу показывает владельцу уже пройденные шаги.
+    ensure_real_aiosqlite(monkeypatch)
+    engine = create_async_engine(f'sqlite+aiosqlite:///{tmp_path / "journal.db"}')
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=BYO_TABLES))
+        maker = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
+        async with maker() as db:
+            owner = ByoOwner(telegram_id=7001, slug='lab-a')
+            db.add(owner)
+            await db.flush()
+            node = ByoNode(owner_id=owner.id, ordinal=1, ip='203.0.113.10')
+            db.add(node)
+            await db.commit()
+            journal = DatabaseStepJournal(db, node.id)
+            for name in ('ssh', 'check'):
+                await journal.mark_running(name)
+                await journal.mark_done(name)
+            await journal.mark_running('secrets')
+            await journal.mark_failed('secrets', 'сбой')
+
+            assert await journal.done_steps() == {'ssh', 'check'}
+    finally:
+        await engine.dispose()

@@ -12,6 +12,7 @@ import structlog
 sys.path.append(str(Path(__file__).parent))
 
 from app.bot import setup_bot
+from app.byo.runtime import byo_runtime
 from app.config import settings
 from app.database.database import sync_postgres_sequences
 from app.database.migrations import run_alembic_upgrade
@@ -365,6 +366,7 @@ async def main():
         traffic_monitoring_scheduler.set_bot(bot)
         daily_subscription_service.set_bot(bot)
         telegram_notifier.set_bot(bot)
+        await byo_runtime.start(bot)
 
         # Хранилище ошибок: пишет события ДО попытки доставки в Telegram,
         # поэтому они переживают недоступность всех путей до чата.
@@ -1064,6 +1066,11 @@ async def main():
                 await log_rotation_service.stop()
             except Exception as e:
                 logger.error('Ошибка остановки сервиса ротации логов', error=e)
+
+        try:
+            await byo_runtime.stop()
+        except Exception as e:
+            logger.warning('Ошибка остановки BYO', error=e)
 
         logger.info('ℹ️ Остановка очереди повторной отправки писем...')
         try:

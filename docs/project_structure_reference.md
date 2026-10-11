@@ -128,9 +128,15 @@
 - `app/byo/models.py` — Python-модуль
   Классы: `ByoNodeStatus`, `ByoStepStatus`, `ByoOwner` (1 методов), `ByoNode` (1 методов), `ByoStep` (1 методов)
   Функции: нет
+- `app/byo/panel.py` — Python-модуль
+  Классы: `PanelRequester` (1 методов), `PanelProvisioner` (3 методов)
+  Функции: нет
 - `app/byo/provisioning.py` — Python-модуль
   Классы: `StepJournal` (4 методов), `Step`, `ProvisioningError` (1 методов)
   Функции: `run_steps`
+- `app/byo/regru.py` — Python-модуль
+  Классы: `RegruError`, `RegruClient` (7 методов)
+  Функции: нет
 - `app/byo/ssh.py` — Python-модуль
   Классы: `CommandRunner` (1 методов), `SshRunner` (2 методов)
   Функции: `connect` — Соединение по ключу. ``proxy_command`` пускает SSH через egress-прокси., `gather_facts`
@@ -3286,9 +3292,15 @@
 - `tests/byo/test_models.py` — Python-модуль
   Классы: нет
   Функции: `test_byo_tables_register_on_the_shared_base`, `test_no_secret_columns_leak_into_the_schema`, `test_owner_is_one_per_telegram_account`, `test_node_belongs_to_an_owner_and_is_removed_with_it`, `test_step_belongs_to_a_node_and_is_removed_with_it`, `test_a_node_cannot_list_the_same_step_twice`, `test_statuses_are_plain_strings_not_native_enums`, `test_status_values`, `test_byo_uses_its_own_table_names`
+- `tests/byo/test_panel_provision.py` — Python-модуль
+  Классы: `FakePanel` (3 методов)
+  Функции: `test_profile_inbound_is_trojan_over_websocket`, `test_profile_blocks_private_addresses_before_direct`, `test_node_uses_the_new_profile_and_its_inbound`, `test_squad_contains_only_this_inbound`, `test_host_allows_only_the_owner_squad`, `test_objects_are_created_in_dependency_order`, `test_create_node_returns_every_uuid_for_the_journal`, `test_isolation_holds_when_the_squad_sees_only_its_node`, `test_isolation_fails_when_the_squad_sees_a_foreign_node`, `test_isolation_fails_when_the_squad_sees_no_node`
 - `tests/byo/test_provisioning.py` — Python-модуль
   Классы: `FakeJournal` (5 методов)
   Функции: `step`, `test_all_steps_run_in_order_on_a_clean_journal`, `test_finished_steps_are_skipped_on_resume`, `test_a_failing_step_stops_the_rest_and_is_recorded`, `test_resume_after_a_failure_reruns_only_the_failed_step_onward`, `test_each_attempt_is_counted`, `test_steps_share_a_context_so_later_steps_see_earlier_results`, `test_a_skipped_step_still_contributes_its_context`
+- `tests/byo/test_regru.py` — Python-модуль
+  Классы: `Capture` (2 методов)
+  Функции: `test_add_record_posts_to_add_alias_with_credentials_and_data`, `test_remove_record_posts_to_remove_record_with_type_and_content`, `test_credentials_never_appear_in_input_data`, `test_api_level_error_raises_with_reason`, `test_per_domain_error_raises_even_when_top_result_is_success`, `test_http_error_status_raises`, `test_success_returns_without_raising`
 - `tests/byo/test_ssh_facts.py` — Python-модуль
   Классы: `FakeRunner` (2 методов)
   Функции: `test_parses_a_plain_debian`, `test_busy_ports_are_collected_as_numbers`, `test_country_is_none_when_lookup_is_empty`, `test_country_is_uppercased_and_trimmed`, `test_unparsable_memory_becomes_zero_so_the_check_rejects_it`, `test_os_id_is_lowercased`

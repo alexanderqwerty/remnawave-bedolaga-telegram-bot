@@ -131,9 +131,15 @@
 - `app/byo/provisioning.py` — Python-модуль
   Классы: `StepJournal` (4 методов), `Step`, `ProvisioningError` (1 методов)
   Функции: `run_steps`
+- `app/byo/ssh.py` — Python-модуль
+  Классы: `CommandRunner` (1 методов), `SshRunner` (2 методов)
+  Функции: `connect` — Соединение по ключу. ``proxy_command`` пускает SSH через egress-прокси., `gather_facts`
 - `app/byo/tariff_guard.py` — Python-модуль
   Классы: `TariffAccessMiddleware` (3 методов)
   Функции: `tariff_id_from_callback` — Возвращает id тарифа из данных кнопки или None, если прочитать его нельзя., `is_tariff_allowed` — Тариф без ограничений доступен всем, с ограничениями — только участникам его групп., `load_tariff_group_ids` — Группы, которым разрешён тариф. Пусто — ограничений нет (или тарифа не существует)., `load_user_group_ids` — Все группы пользователя: основная из `users.promo_group_id` и членства.
+- `app/byo/vps_check.py` — Python-модуль
+  Классы: `VpsFacts`, `Verdict`
+  Функции: `evaluate`
 
 ### app/cabinet
 
@@ -3283,9 +3289,15 @@
 - `tests/byo/test_provisioning.py` — Python-модуль
   Классы: `FakeJournal` (5 методов)
   Функции: `step`, `test_all_steps_run_in_order_on_a_clean_journal`, `test_finished_steps_are_skipped_on_resume`, `test_a_failing_step_stops_the_rest_and_is_recorded`, `test_resume_after_a_failure_reruns_only_the_failed_step_onward`, `test_each_attempt_is_counted`, `test_steps_share_a_context_so_later_steps_see_earlier_results`, `test_a_skipped_step_still_contributes_its_context`
+- `tests/byo/test_ssh_facts.py` — Python-модуль
+  Классы: `FakeRunner` (2 методов)
+  Функции: `test_parses_a_plain_debian`, `test_busy_ports_are_collected_as_numbers`, `test_country_is_none_when_lookup_is_empty`, `test_country_is_uppercased_and_trimmed`, `test_unparsable_memory_becomes_zero_so_the_check_rejects_it`, `test_os_id_is_lowercased`
 - `tests/byo/test_tariff_guard.py` — Python-модуль
   Классы: нет
   Функции: `test_tariff_id_is_read_from_its_field`, `test_callback_without_readable_tariff_id_gives_none`, `test_tariff_without_group_restrictions_is_allowed_for_everyone`, `test_member_of_an_allowed_group_is_allowed`, `test_member_of_another_group_is_not_allowed`, `test_user_without_groups_is_not_allowed_on_restricted_tariff`, `test_member_reaches_the_handler`, `test_foreign_tariff_never_reaches_the_handler`, `test_extend_checks_the_tariff_not_the_subscription_id`, `test_unrelated_callback_passes_without_any_lookup`, `test_tariff_callback_is_blocked_when_groups_cannot_be_checked`, `test_user_groups_combine_main_group_and_memberships`, `test_unknown_user_has_no_groups`, `test_every_callback_of_the_purchase_modules_is_classified` — Сторож на случай обновления upstream: новая кнопка с тарифом не пройдёт молча., `test_guard_runs_after_the_user_is_loaded`
+- `tests/byo/test_vps_check.py` — Python-модуль
+  Классы: нет
+  Функции: `test_a_fresh_debian_passes`, `test_ubuntu_also_passes`, `test_other_distros_are_rejected`, `test_too_little_memory_is_rejected`, `test_slightly_under_a_gib_still_passes`, `test_a_busy_required_port_is_rejected`, `test_other_busy_ports_do_not_matter`, `test_a_russian_ip_is_rejected`, `test_unknown_country_is_rejected_to_stay_safe`, `test_the_first_failing_requirement_is_reported`
 
 ### tests/cabinet
 

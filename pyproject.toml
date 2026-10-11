@@ -18,6 +18,7 @@ dependencies = [
     'yookassa==3.12.1',
     'python-dateutil==2.9.0.post0',
     'cryptography==50.0.1',
+    'asyncssh==2.24.1',
     'qrcode[pil]==8.2',
     'packaging==26.3',
     'bcrypt==5.0.0',

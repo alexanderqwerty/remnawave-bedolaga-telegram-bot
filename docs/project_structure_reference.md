@@ -87,6 +87,7 @@
 - `app/bot_factory.py` — Python-модуль
   Классы: нет
   Функции: `create_bot` — Create a Bot instance with SOCKS5 proxy and/or custom Telegram API server.
+- `app/byo/`
 - `app/cabinet/`
 - `app/config.py` — Python-модуль
   Классы: `Settings` (414 методов)
@@ -115,6 +116,15 @@
 - `app/utils/`
 - `app/webapi/`
 - `app/webserver/`
+
+### app/byo
+
+- `app/byo/__init__.py` — Python-модуль
+  Классы: нет
+  Функции: нет
+- `app/byo/tariff_guard.py` — Python-модуль
+  Классы: `TariffAccessMiddleware` (3 методов)
+  Функции: `tariff_id_from_callback` — Возвращает id тарифа из данных кнопки или None, если прочитать его нельзя., `is_tariff_allowed` — Тариф без ограничений доступен всем, с ограничениями — только участникам его групп., `load_tariff_group_ids` — Группы, которым разрешён тариф. Пусто — ограничений нет (или тарифа не существует)., `load_user_group_ids` — Все группы пользователя: основная из `users.promo_group_id` и членства.
 
 ### app/cabinet
 
@@ -3109,6 +3119,7 @@
 - `tests/_manual_grace_core_runner.py` — Python-модуль
   Классы: нет
   Функции: нет
+- `tests/byo/`
 - `tests/cabinet/`
 - `tests/ci/`
 - `tests/conftest.py` — Python-модуль
@@ -3248,6 +3259,15 @@
 - `tests/utils/`
 - `tests/webapi/`
 - `tests/webserver/`
+
+### tests/byo
+
+- `tests/byo/__init__.py` — Python-модуль
+  Классы: нет
+  Функции: нет
+- `tests/byo/test_tariff_guard.py` — Python-модуль
+  Классы: нет
+  Функции: `test_tariff_id_is_read_from_its_field`, `test_callback_without_readable_tariff_id_gives_none`, `test_tariff_without_group_restrictions_is_allowed_for_everyone`, `test_member_of_an_allowed_group_is_allowed`, `test_member_of_another_group_is_not_allowed`, `test_user_without_groups_is_not_allowed_on_restricted_tariff`, `test_member_reaches_the_handler`, `test_foreign_tariff_never_reaches_the_handler`, `test_extend_checks_the_tariff_not_the_subscription_id`, `test_unrelated_callback_passes_without_any_lookup`, `test_tariff_callback_is_blocked_when_groups_cannot_be_checked`, `test_user_groups_combine_main_group_and_memberships`, `test_unknown_user_has_no_groups`, `test_every_callback_of_the_purchase_modules_is_classified` — Сторож на случай обновления upstream: новая кнопка с тарифом не пройдёт молча., `test_guard_runs_after_the_user_is_loaded`
 
 ### tests/cabinet
 

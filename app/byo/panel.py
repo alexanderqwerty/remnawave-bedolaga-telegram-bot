@@ -13,6 +13,8 @@ from typing import Any, Protocol
 
 
 NODE_PORT = 2222
+# Клиенты идут на домен ноды через Caddy по TLS, не на порт инбаунда.
+HTTPS_PORT = 443
 # Приватные и служебные диапазоны: блокируются раньше DIRECT, чтобы через ноду
 # нельзя было достучаться до внутренней сети хостера или малины.
 PRIVATE_NETWORKS = [
@@ -39,13 +41,16 @@ def _profile_config(spec: dict[str, Any]) -> dict:
         'inbounds': [
             {
                 'tag': spec['inbound_tag'],
+                # Наружу смотрит только Caddy; инбаунд слушает локально.
+                'listen': '127.0.0.1',
                 'protocol': 'trojan',
                 'port': spec['inbound_port'],
                 'settings': {'clients': []},
                 'streamSettings': {
                     'network': 'ws',
                     'security': 'none',
-                    'wsSettings': {'path': spec['ws_path'], 'host': spec['node_name']},
+                    # Host обязан совпадать с доменом, который отдаёт Caddy.
+                    'wsSettings': {'path': spec['ws_path'], 'host': spec['fqdn']},
                 },
             }
         ],
@@ -72,20 +77,20 @@ class PanelProvisioner:
         )
         inbound_uuid = next(i['uuid'] for i in profile['inbounds'] if i['tag'] == spec['inbound_tag'])
 
-        node = await self._panel.request(
-            'POST',
-            '/api/nodes',
-            {
-                'name': spec['node_name'],
-                'address': spec['node_address'],
-                'port': NODE_PORT,
-                'countryCode': 'XX',
-                'configProfile': {
-                    'activeConfigProfileUuid': profile['uuid'],
-                    'activeInbounds': [inbound_uuid],
-                },
+        node_body: dict[str, Any] = {
+            'name': spec['node_name'],
+            'address': spec['node_address'],
+            'port': NODE_PORT,
+            'countryCode': 'XX',
+            'configProfile': {
+                'activeConfigProfileUuid': profile['uuid'],
+                'activeInbounds': [inbound_uuid],
             },
-        )
+        }
+        if spec.get('proxy_url'):
+            # Панель ходит к ноде через egress-выход: у ноды 2222 открыт только с его IP.
+            node_body['proxyUrl'] = spec['proxy_url']
+        node = await self._panel.request('POST', '/api/nodes', node_body)
         squad = await self._panel.request(
             'POST', '/api/internal-squads', {'name': spec['name'], 'inbounds': [inbound_uuid]}
         )
@@ -95,11 +100,12 @@ class PanelProvisioner:
             {
                 'inbound': {'configProfileUuid': profile['uuid'], 'configProfileInboundUuid': inbound_uuid},
                 'remark': spec['host_remark'],
-                'address': spec['node_address'],
-                'port': spec['inbound_port'],
+                'address': spec['fqdn'],
+                'port': HTTPS_PORT,
                 'path': spec['ws_path'],
-                'host': spec['node_name'],
-                'securityLayer': 'NONE',
+                'host': spec['fqdn'],
+                'sni': spec['fqdn'],
+                'securityLayer': 'TLS',
                 'internalSquads': {'mode': 'ALLOW_ONLY', 'squads': [squad['uuid']]},
             },
         )

@@ -128,6 +128,12 @@
 - `app/byo/models.py` — Python-модуль
   Классы: `ByoNodeStatus`, `ByoStepStatus`, `ByoOwner` (1 методов), `ByoNode` (1 методов), `ByoStep` (1 методов)
   Функции: нет
+- `app/byo/node_install.py` — Python-модуль
+  Классы: `InstallSpec`
+  Функции: `render_node_files`, `install_commands`
+- `app/byo/node_secrets.py` — Python-модуль
+  Классы: `Rng` (1 методов), `NodeSecrets`
+  Функции: `default_rng`, `build_node_secrets`
 - `app/byo/panel.py` — Python-модуль
   Классы: `PanelRequester` (1 методов), `PanelProvisioner` (3 методов)
   Функции: нет
@@ -3292,9 +3298,15 @@
 - `tests/byo/test_models.py` — Python-модуль
   Классы: нет
   Функции: `test_byo_tables_register_on_the_shared_base`, `test_no_secret_columns_leak_into_the_schema`, `test_owner_is_one_per_telegram_account`, `test_node_belongs_to_an_owner_and_is_removed_with_it`, `test_step_belongs_to_a_node_and_is_removed_with_it`, `test_a_node_cannot_list_the_same_step_twice`, `test_statuses_are_plain_strings_not_native_enums`, `test_status_values`, `test_byo_uses_its_own_table_names`
+- `tests/byo/test_node_install.py` — Python-модуль
+  Классы: нет
+  Функции: `test_node_compose_pins_the_image_and_keeps_secret_key_unquoted`, `test_node_runs_on_host_network_so_it_can_bind_2222`, `test_caddyfile_serves_the_fqdn_and_proxies_the_ws_path`, `test_caddyfile_answers_other_paths_so_it_looks_like_a_site`, `test_secret_key_appears_only_in_the_node_compose`, `test_install_opens_the_required_ports`, `test_ufw_is_installed_before_any_rule`, `test_port_2222_is_restricted_to_the_gateway`, `test_install_brings_up_both_stacks`, `test_install_sets_up_docker_before_compose`, `test_a_malformed_secret_key_is_rejected`
+- `tests/byo/test_node_secrets.py` — Python-модуль
+  Классы: нет
+  Функции: `test_builds_all_fields_for_the_first_node`, `test_tag_encodes_slug_and_ordinal`, `test_label_is_random_lowercase_alnum`, `test_ws_path_is_a_random_hex_path`, `test_label_and_path_differ`, `test_port_is_stable_for_the_same_owner_and_ordinal`, `test_port_differs_between_two_nodes_of_one_owner`, `test_port_stays_in_the_private_range`, `test_invalid_slug_is_rejected`
 - `tests/byo/test_panel_provision.py` — Python-модуль
   Классы: `FakePanel` (3 методов)
-  Функции: `test_profile_inbound_is_trojan_over_websocket`, `test_profile_blocks_private_addresses_before_direct`, `test_node_uses_the_new_profile_and_its_inbound`, `test_squad_contains_only_this_inbound`, `test_host_allows_only_the_owner_squad`, `test_objects_are_created_in_dependency_order`, `test_create_node_returns_every_uuid_for_the_journal`, `test_isolation_holds_when_the_squad_sees_only_its_node`, `test_isolation_fails_when_the_squad_sees_a_foreign_node`, `test_isolation_fails_when_the_squad_sees_no_node`
+  Функции: `test_profile_inbound_is_trojan_over_websocket`, `test_inbound_listens_only_on_localhost_behind_caddy`, `test_profile_blocks_private_addresses_before_direct`, `test_node_uses_the_new_profile_and_its_inbound`, `test_squad_contains_only_this_inbound`, `test_host_allows_only_the_owner_squad`, `test_clients_reach_the_node_by_domain_over_tls_on_443`, `test_websocket_host_matches_the_domain_caddy_serves`, `test_panel_reaches_the_node_through_the_egress_proxy`, `test_no_proxy_means_the_field_is_omitted`, `test_objects_are_created_in_dependency_order`, `test_create_node_returns_every_uuid_for_the_journal`, `test_isolation_holds_when_the_squad_sees_only_its_node`, `test_isolation_fails_when_the_squad_sees_a_foreign_node`, `test_isolation_fails_when_the_squad_sees_no_node`
 - `tests/byo/test_provisioning.py` — Python-модуль
   Классы: `FakeJournal` (5 методов)
   Функции: `step`, `test_all_steps_run_in_order_on_a_clean_journal`, `test_finished_steps_are_skipped_on_resume`, `test_a_failing_step_stops_the_rest_and_is_recorded`, `test_resume_after_a_failure_reruns_only_the_failed_step_onward`, `test_each_attempt_is_counted`, `test_steps_share_a_context_so_later_steps_see_earlier_results`, `test_a_skipped_step_still_contributes_its_context`

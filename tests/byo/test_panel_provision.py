@@ -53,9 +53,11 @@ SPEC = {
     'inbound_tag': 'o-lab-a-1-tws',
     'inbound_port': 8501,
     'ws_path': '/secretpath',
+    'fqdn': 'abc123.vpn.miet-tv.ru',
     'node_name': 'lab-node-a',
     'node_address': '203.0.113.10',
     'host_remark': 'owner lab-a',
+    'proxy_url': 'socks5://xray:1080',
 }
 
 
@@ -73,6 +75,16 @@ async def test_profile_inbound_is_trojan_over_websocket():
     assert inbound['tag'] == 'o-lab-a-1-tws'
     assert inbound['streamSettings']['network'] == 'ws'
     assert inbound['streamSettings']['wsSettings']['path'] == '/secretpath'
+
+
+@pytest.mark.asyncio
+async def test_inbound_listens_only_on_localhost_behind_caddy():
+    # Снаружи нода доступна только через Caddy на 443; сам инбаунд наружу не смотрит.
+    panel = FakePanel()
+    await _provision(panel)
+
+    inbound = panel.body_of('/api/config-profiles')['config']['inbounds'][0]
+    assert inbound['listen'] == '127.0.0.1'
 
 
 @pytest.mark.asyncio
@@ -113,9 +125,43 @@ async def test_host_allows_only_the_owner_squad():
 
     host = panel.body_of('/api/hosts')
     assert host['internalSquads'] == {'mode': 'ALLOW_ONLY', 'squads': [SQUAD_UUID]}
-    assert host['address'] == '203.0.113.10'
-    assert host['port'] == 8501
+
+
+@pytest.mark.asyncio
+async def test_clients_reach_the_node_by_domain_over_tls_on_443():
+    panel = FakePanel()
+    await _provision(panel)
+
+    host = panel.body_of('/api/hosts')
+    assert host['address'] == 'abc123.vpn.miet-tv.ru'
+    assert host['port'] == 443
+    assert host['securityLayer'] == 'TLS'
+    assert host['sni'] == 'abc123.vpn.miet-tv.ru'
+    assert host['host'] == 'abc123.vpn.miet-tv.ru'
     assert host['path'] == '/secretpath'
+
+
+@pytest.mark.asyncio
+async def test_websocket_host_matches_the_domain_caddy_serves():
+    panel = FakePanel()
+    await _provision(panel)
+
+    ws = panel.body_of('/api/config-profiles')['config']['inbounds'][0]['streamSettings']['wsSettings']
+    assert ws['host'] == 'abc123.vpn.miet-tv.ru'
+
+
+@pytest.mark.asyncio
+async def test_panel_reaches_the_node_through_the_egress_proxy():
+    panel = FakePanel()
+    await _provision(panel)
+    assert panel.body_of('/api/nodes')['proxyUrl'] == 'socks5://xray:1080'
+
+
+@pytest.mark.asyncio
+async def test_no_proxy_means_the_field_is_omitted():
+    panel = FakePanel()
+    await PanelProvisioner(panel).create_node({**SPEC, 'proxy_url': None})
+    assert 'proxyUrl' not in panel.body_of('/api/nodes')
 
 
 @pytest.mark.asyncio
